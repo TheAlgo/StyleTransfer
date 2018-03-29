@@ -7,43 +7,36 @@ import sys
 import numpy as np
 import scipy.io
 import scipy.misc
+import cv2
 import tensorflow as tf
+import h5py as h5
 
-###############################################################################
+
+f = h5py.File('trained_model-11-19.h5', 'r')
+
+
 # Constants for the image input and output.
-###############################################################################
-
 # Output folder for the images.
 OUTPUT_DIR = 'output/'
-# Style image to use.
-# STYLE_IMAGE = 'images/starry_night.jpg'
+# Style image 
 STYLE_IMAGE = 'images/StarryNight.jpg'
 # Content image to use.
-# CONTENT_IMAGE = 'images/hong_kong_2.jpg'
-CONTENT_IMAGE = 'images/Macau.jpg'
+CONTENT_IMAGE = 'images/hongkong.jpg'
 # Image dimensions constants. 
+#ls = cv2.imread(CONTENT_IMAGE)
+#print(ls.shape)
 IMAGE_WIDTH = 800
 IMAGE_HEIGHT = 600
 COLOR_CHANNELS = 3
-
-###############################################################################
-# Algorithm constants
-###############################################################################
 # Noise ratio. Percentage of weight of the noise for intermixing with the
 # content image.
 NOISE_RATIO = 0.6
 # Number of iterations to run.
-ITERATIONS = 5
+ITERATIONS = 20
 # Constant to put more emphasis on content loss.
 BETA = 5
 # Constant to put more emphasis on style loss.
 ALPHA = 100
-# Path to the deep learning model. This is more than 500MB so will not be
-# included in the repository, but available to download at the model Zoo:
-# Link: https://github.com/BVLC/caffe/wiki/Model-Zoo
-#
-# Pick the VGG 19-layer model by from the paper "Very Deep Convolutional 
-# Networks for Large-Scale Image Recognition".
 VGG_MODEL = 'imagenet-vgg-verydeep-19.mat'
 # The mean to subtract from the input to the VGG model. This is the mean that
 # when the VGG was used to train. Minor changes to this will make a lot of
@@ -61,11 +54,60 @@ def generate_noise_image(content_image, noise_ratio = NOISE_RATIO):
     # of the values
     input_image = noise_image * noise_ratio + content_image * (1 - noise_ratio)
     return input_image
+''' def crop_center(img,cropx,cropy):
+    y,x,z = img.shape
+    startx = x//2-(cropx//2)
+    starty = y//2-(cropy//2)    
+    return img[starty:starty+cropy,startx:startx+cropx]
+ '''
+K.set_image_data_format('channels_last')
+
+
+# def CapsNet(input_shape, n_class, routings):
+#     """
+#     A Capsule Network on MNIST.
+#     :param input_shape: data shape, 3d, [width, height, channels]
+#     :param n_class: number of classes
+#     :param routings: number of routing iterations
+#     :return: Two Keras Models, the first one used for training, and the second one for evaluation.
+#             `eval_model` can also be used for training.
+#     """
+#     x = layers.Input(shape=input_shape)
+
+#     # Layer 1: Just a conventional Conv2D layer
+#     conv1 = layers.Conv2D(filters=256, kernel_size=9, strides=1, padding='valid', activation='relu', name='conv1')(x)
+
+#     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
+#     primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=9, strides=2, padding='valid')
+
+#     # Layer 3: Capsule layer. Routing algorithm works here.
+#     digitcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
+#                              name='digitcaps')(primarycaps)
+
+#     # Layer 4: This is an auxiliary layer to replace each capsule with its length. Just to match the true label's shape.
+#     # If using tensorflow, this will not be necessary. :)
+#     out_caps = Length(name='capsnet')(digitcaps)
+
+#     # Decoder network.
+#     y = layers.Input(shape=(n_class,))
+#     masked_by_y = Mask()([digitcaps, y])  # The true label is used to mask the output of capsule layer. For training
+#     masked = Mask()(digitcaps)  # Mask using the capsule with maximal length. For prediction
+
+#     # Shared Decoder model in training and prediction
+#     decoder = models.Sequential(name='decoder')
+#     decoder.add(layers.Dense(512, activation='relu', input_dim=16*n_class))
+#     decoder.add(layers.Dense(1024, activation='relu'))
+#     decoder.add(layers.Dense(np.prod(input_shape), activation='sigmoid'))
+#     decoder.add(layers.Reshape(target_shape=input_shape, name='out_recon'))
+
+
+
 
 def load_image(path):
     image = scipy.misc.imread(path)
     # Resize the image for convnet input, there is no change but just
     # add an extra dimension.
+    #image = crop_center(image, 400, 400)
     image = np.reshape(image, ((1,) + image.shape))
     # Input to the VGG model expects the mean to be subtracted.
     image = image - MEAN_VALUES
@@ -80,60 +122,8 @@ def save_image(path, image):
     scipy.misc.imsave(path, image)
 
 def load_vgg_model(path):
-    """
-    Returns a model for the purpose of 'painting' the picture.
+    
 
-    Takes only the convolution layer weights and wrap using the TensorFlow
-    Conv2d, Relu and AveragePooling layer. VGG actually uses maxpool but
-    the paper indicates that using AveragePooling yields better results.
-    The last few fully connected layers are not used.
-
-    Here is the detailed configuration of the VGG model:
-
-        0 is conv1_1 (3, 3, 3, 64)
-        1 is relu
-        2 is conv1_2 (3, 3, 64, 64)
-        3 is relu    
-        4 is maxpool
-        5 is conv2_1 (3, 3, 64, 128)
-        6 is relu
-        7 is conv2_2 (3, 3, 128, 128)
-        8 is relu
-        9 is maxpool
-        10 is conv3_1 (3, 3, 128, 256)
-        11 is relu
-        12 is conv3_2 (3, 3, 256, 256)
-        13 is relu
-        14 is conv3_3 (3, 3, 256, 256)
-        15 is relu
-        16 is conv3_4 (3, 3, 256, 256)
-        17 is relu
-        18 is maxpool
-        19 is conv4_1 (3, 3, 256, 512)
-        20 is relu
-        21 is conv4_2 (3, 3, 512, 512)
-        22 is relu
-        23 is conv4_3 (3, 3, 512, 512)
-        24 is relu
-        25 is conv4_4 (3, 3, 512, 512)
-        26 is relu
-        27 is maxpool
-        28 is conv5_1 (3, 3, 512, 512)
-        29 is relu
-        30 is conv5_2 (3, 3, 512, 512)
-        31 is relu
-        32 is conv5_3 (3, 3, 512, 512)
-        33 is relu
-        34 is conv5_4 (3, 3, 512, 512)
-        35 is relu
-        36 is maxpool
-        37 is fullyconnected (7, 7, 512, 4096)
-        38 is relu
-        39 is fullyconnected (1, 1, 4096, 4096)
-        40 is relu
-        41 is fullyconnected (1, 1, 4096, 1000)
-        42 is softmax
-    """
     vgg = scipy.io.loadmat(path)
 
     vgg_layers = vgg['layers']
@@ -178,10 +168,13 @@ def load_vgg_model(path):
         """
         return tf.nn.avg_pool(prev_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
+    def caps_call(caps_layers,shape=[800,600,3]):
+
     # Constructs the graph model.
     graph = {}
     graph['input']   = tf.Variable(np.zeros((1, IMAGE_HEIGHT, IMAGE_WIDTH, COLOR_CHANNELS)), dtype = 'float32')
-    graph['conv1_1']  = _conv2d_relu(graph['input'], 0, 'conv1_1')
+    graph['caps'] =     _caps_relu(graph['input'],0 , 'caps' )
+    graph['conv1_1']  = _conv2d_relu(graph['caps'], 1, 'conv1_1')
     graph['conv1_2']  = _conv2d_relu(graph['conv1_1'], 2, 'conv1_2')
     graph['avgpool1'] = _avgpool(graph['conv1_2'])
     graph['conv2_1']  = _conv2d_relu(graph['avgpool1'], 5, 'conv2_1')
@@ -213,13 +206,7 @@ def content_loss_func(sess, model):
         N = p.shape[3]
         # M is the height times the width of the feature map (at layer l).
         M = p.shape[1] * p.shape[2]
-        # Interestingly, the paper uses this form instead:
-        #
-        #   0.5 * tf.reduce_sum(tf.pow(x - p, 2)) 
-        #
-        # But this form is very slow in "painting" and thus could be missing
-        # out some constants (from what I see in other source code), so I'll
-        # replicate the same normalization constant as used in style loss.
+
         return (1 / (4 * N * M)) * tf.reduce_sum(tf.pow(x - p, 2))
     return _content_loss(sess.run(model['conv4_2']), model['conv4_2'])
 
@@ -291,12 +278,6 @@ if __name__ == '__main__':
 
         # Instantiate equation 7 of the paper.
         total_loss = BETA * content_loss + ALPHA * style_loss
-
-        # From the paper: jointly minimize the distance of a white noise image
-        # from the content representation of the photograph in one layer of
-        # the neywork and the style representation of the painting in a number
-        # of layers of the CNN.
-        #
         # The content is built from one layer, while the style is from five
         # layers. Then we minimize the total_loss, which is the equation 7.
         optimizer = tf.train.AdamOptimizer(2.0)
