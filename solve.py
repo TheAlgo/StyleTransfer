@@ -178,31 +178,31 @@ def load_vgg_model(path):
     def caps_call(caps_layers,shape=[800,600,3]):
 
     # Constructs the graph model.
-    graph = {}
-    graph['input']   = tf.Variable(np.zeros((1, IMAGE_HEIGHT, IMAGE_WIDTH, COLOR_CHANNELS)), dtype = 'float32')
-    graph['caps'] =     _caps_relu(graph['input'],0 , 'caps' )
-    graph['conv1_1']  = _conv2d_relu(graph['caps'], 1, 'conv1_1')
-    graph['conv1_2']  = _conv2d_relu(graph['conv1_1'], 2, 'conv1_2')
-    graph['avgpool1'] = _avgpool(graph['conv1_2'])
-    graph['conv2_1']  = _conv2d_relu(graph['avgpool1'], 5, 'conv2_1')
-    graph['conv2_2']  = _conv2d_relu(graph['conv2_1'], 7, 'conv2_2')
-    graph['avgpool2'] = _avgpool(graph['conv2_2'])
-    graph['conv3_1']  = _conv2d_relu(graph['avgpool2'], 10, 'conv3_1')
-    graph['conv3_2']  = _conv2d_relu(graph['conv3_1'], 12, 'conv3_2')
-    graph['conv3_3']  = _conv2d_relu(graph['conv3_2'], 14, 'conv3_3')
-    graph['conv3_4']  = _conv2d_relu(graph['conv3_3'], 16, 'conv3_4')
-    graph['avgpool3'] = _avgpool(graph['conv3_4'])
-    graph['conv4_1']  = _conv2d_relu(graph['avgpool3'], 19, 'conv4_1')
-    graph['conv4_2']  = _conv2d_relu(graph['conv4_1'], 21, 'conv4_2')
-    graph['conv4_3']  = _conv2d_relu(graph['conv4_2'], 23, 'conv4_3')
-    graph['conv4_4']  = _conv2d_relu(graph['conv4_3'], 25, 'conv4_4')
-    graph['avgpool4'] = _avgpool(graph['conv4_4'])
-    graph['conv5_1']  = _conv2d_relu(graph['avgpool4'], 28, 'conv5_1')
-    graph['conv5_2']  = _conv2d_relu(graph['conv5_1'], 30, 'conv5_2')
-    graph['conv5_3']  = _conv2d_relu(graph['conv5_2'], 32, 'conv5_3')
-    graph['conv5_4']  = _conv2d_relu(graph['conv5_3'], 34, 'conv5_4')
-    graph['avgpool5'] = _avgpool(graph['conv5_4'])
-    return graph
+        graph=[]
+        graph['input']   = tf.Variable(np.zeros((1, IMAGE_HEIGHT, IMAGE_WIDTH, COLOR_CHANNELS)), dtype = 'float32')
+        graph['caps'] =     _caps_relu(graph['input'],0 , 'caps' )
+        graph['conv1_1']  = _conv2d_relu(graph['caps'], 1, 'conv1_1')
+        graph['conv1_2']  = _conv2d_relu(graph['conv1_1'], 2, 'conv1_2')
+        graph['avgpool1'] = _avgpool(graph['conv1_2'])
+        graph['conv2_1']  = _conv2d_relu(graph['avgpool1'], 5, 'conv2_1')
+        graph['conv2_2']  = _conv2d_relu(graph['conv2_1'], 7, 'conv2_2')
+        graph['avgpool2'] = _avgpool(graph['conv2_2'])
+        graph['conv3_1']  = _conv2d_relu(graph['avgpool2'], 10, 'conv3_1')
+        graph['conv3_2']  = _conv2d_relu(graph['conv3_1'], 12, 'conv3_2')
+        graph['conv3_3']  = _conv2d_relu(graph['conv3_2'], 14, 'conv3_3')
+        graph['conv3_4']  = _conv2d_relu(graph['conv3_3'], 16, 'conv3_4')
+        graph['avgpool3'] = _avgpool(graph['conv3_4'])
+        graph['conv4_1']  = _conv2d_relu(graph['avgpool3'], 19, 'conv4_1')
+        graph['conv4_2']  = _conv2d_relu(graph['conv4_1'], 21, 'conv4_2')
+        graph['conv4_3']  = _conv2d_relu(graph['conv4_2'], 23, 'conv4_3')
+        graph['conv4_4']  = _conv2d_relu(graph['conv4_3'], 25, 'conv4_4')
+        graph['avgpool4'] = _avgpool(graph['conv4_4'])
+        graph['conv5_1']  = _conv2d_relu(graph['avgpool4'], 28, 'conv5_1')
+        graph['conv5_2']  = _conv2d_relu(graph['conv5_1'], 30, 'conv5_2')
+        graph['conv5_3']  = _conv2d_relu(graph['conv5_2'], 32, 'conv5_3')
+        graph['conv5_4']  = _conv2d_relu(graph['conv5_3'], 34, 'conv5_4')
+        graph['avgpool5'] = _avgpool(graph['conv5_4'])
+        return graph
 
 def content_loss_func(sess, model):
     """
