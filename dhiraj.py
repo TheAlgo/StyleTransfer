@@ -126,6 +126,9 @@ if use_cuda:
 content_layers_default = ['conv_4']
 style_layers_default = ['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']
 
+def caps_content(nn.modules):
+    caps_cnn = models.caps_net(pretrained=True).layer['capsule_net'].stich()
+
 
 def get_style_model_and_losses(cnn, style_img, content_img,
                                style_weight=1000, content_weight=1,
